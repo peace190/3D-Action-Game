@@ -17,7 +17,7 @@ let particlesArray = [];
 let decorationCubes = [];
 
 let lastFireTime = 0;
-const fireCooldown = 150; 
+let fireCooldown = 150; 
 let isFiringPressed = false;
 
 const cameraOffset = new THREE.Vector3(0, 10.5, 7.5);
@@ -39,15 +39,16 @@ let audioSequenceTimer = null;
 let musicEnabled = true;
 let sfxEnabled = true;
 
-const STAGE_CONFIGS = [
-    { gridColor: 0x00ff88, fogColor: 0x020206 },
-    { gridColor: 0x00ffff, fogColor: 0x01050a },
-    { gridColor: 0xff00ff, fogColor: 0x06010a }
-];
+// UPGRADED 3-TIER SECTOR ARCHITECTURE (Unique themes, styling parameters, layout mechanics)
+const SECTOR_METADATA = {
+    1: { name: "GRID RUNNER", gridColor: 0x00ff88, fogColor: 0x020206, speedMultiplier: 1.0, size: 1.0, shape: "box", fireRate: 150 },
+    2: { name: "NEON HELL", gridColor: 0x00ffff, fogColor: 0x01050a, speedMultiplier: 1.4, size: 0.65, shape: "cone", fireRate: 110 },
+    3: { name: "VOID MATRIX", gridColor: 0xff00ff, fogColor: 0x07010e, speedMultiplier: 1.9, size: 1.2, shape: "sphere", fireRate: 80 }
+};
 
 initEngine();
 setupSkinSelectors();
-loadHighScore(); // Load real score immediately on boot
+loadHighScore(); 
 buildMenuDecorations();
 setupSystemInteractions();
 setupInputs();
@@ -55,8 +56,8 @@ animateLoop();
 
 function initEngine() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(STAGE_CONFIGS[0].fogColor);
-    scene.fog = new THREE.FogExp2(STAGE_CONFIGS[0].fogColor, 0.045);
+    scene.background = new THREE.Color(SECTOR_METADATA[1].fogColor);
+    scene.fog = new THREE.FogExp2(SECTOR_METADATA[1].fogColor, 0.045);
 
     camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -84,7 +85,7 @@ function initEngine() {
     playerGroup.add(weaponTurret);
 
     scene.add(playerGroup);
-    buildLevelGrid(STAGE_CONFIGS[0].gridColor);
+    buildLevelGrid(SECTOR_METADATA[1].gridColor);
 
     window.addEventListener('resize', onWindowResize);
 }
@@ -185,6 +186,13 @@ function setupSystemInteractions() {
 }
 
 function setupInputs() {
+    // FORCE HARDWARE FULLSCREEN MODE ON INTERACTION TO DROP URL ADDRESS BAR
+    window.addEventListener('touchstart', function() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        }
+    }, { once: true });
+
     document.getElementById('play-btn').addEventListener('click', () => {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -296,14 +304,43 @@ function startGameApp() {
     score = 0; currentLevel = 1; targetKills = 10; playerLives = 3;
     
     playerGroup.position.set(0, 0, 0);
-    buildLevelGrid(STAGE_CONFIGS[0].gridColor);
+    applySectorConfigurations(1);
     updateInterfaceLayout();
     spawnEnemyWave();
 }
 
+// UPGRADE: Dynamic application of Level Structural Elements
+function applySectorConfigurations(level) {
+    let metadataIndex = level;
+    if (level > 3) metadataIndex = ((level - 1) % 3) + 1;
+
+    const currentMeta = SECTOR_METADATA[metadataIndex];
+    
+    scene.background.setHex(currentMeta.fogColor);
+    scene.fog.color.setHex(currentMeta.fogColor);
+    buildLevelGrid(currentMeta.gridColor);
+
+    fireCooldown = currentMeta.fireRate; 
+}
+
 function spawnEnemy() {
     if (isGameOver || !gameStarted) return;
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.85, 0.85), new THREE.MeshStandardMaterial({ color: 0xff0055 }));
+    
+    let metadataIndex = currentLevel;
+    if (currentLevel > 3) metadataIndex = ((currentLevel - 1) % 3) + 1;
+    const meta = SECTOR_METADATA[metadataIndex];
+
+    let geometry;
+    // Structural layout shift: Changing physical geometry parameters per level tier
+    if (meta.shape === "cone") {
+        geometry = new THREE.ConeGeometry(0.5 * meta.size, 1 * meta.size, 4);
+    } else if (meta.shape === "sphere") {
+        geometry = new THREE.SphereGeometry(0.5 * meta.size, 6, 6);
+    } else {
+        geometry = new THREE.BoxGeometry(0.85 * meta.size, 0.85 * meta.size, 0.85 * meta.size);
+    }
+
+    const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xff0055 }));
     mesh.position.y = 0.45;
 
     const rad = Math.random() * Math.PI * 2;
@@ -361,7 +398,13 @@ function updateGamePhysics() {
         if (p.life <= 0) { scene.remove(p.mesh); projectilesArray.splice(i, 1); }
     }
 
-    const speed = 0.038 + (currentLevel * 0.005);
+    let metadataIndex = currentLevel;
+    if (currentLevel > 3) metadataIndex = ((currentLevel - 1) % 3) + 1;
+    const currentMeta = SECTOR_METADATA[metadataIndex];
+
+    // Speed scales dynamically with level metadata multipliers
+    const speed = (0.038 + (currentLevel * 0.005)) * currentMeta.speedMultiplier;
+    
     for (let i = enemiesArray.length - 1; i >= 0; i--) {
         const enemy = enemiesArray[i];
         const heading = new THREE.Vector3().subVectors(playerGroup.position, enemy.position);
@@ -386,11 +429,9 @@ function updateGamePhysics() {
                 if (score >= targetKills) {
                     currentLevel++; score = 0; targetKills += 4;
                     
-                    // Save level milestone progress permanently
+                    // SAVE FUNCTION VALIDATION
                     saveHighScore(currentLevel);
-                    
-                    let configIndex = (currentLevel - 1) % STAGE_CONFIGS.length;
-                    buildLevelGrid(STAGE_CONFIGS[configIndex].gridColor);
+                    applySectorConfigurations(currentLevel);
                     updateInterfaceLayout();
                 }
                 break;
@@ -408,13 +449,18 @@ function runGameOverState() {
     document.getElementById('play-btn').innerText = "RESTART CORE";
     document.getElementById('start-menu').style.visibility = 'visible';
     document.getElementById('start-menu').style.opacity = '1';
-    loadHighScore(); // Refresh score box on menu open
+    loadHighScore(); 
 }
 
 function updateInterfaceLayout() {
+    let metadataIndex = currentLevel;
+    if (currentLevel > 3) metadataIndex = ((currentLevel - 1) % 3) + 1;
+
+    document.getElementById('level-name').innerText = SECTOR_METADATA[metadataIndex].name;
     document.getElementById('level-num').innerText = currentLevel;
     document.getElementById('score-num').innerText = score;
     document.getElementById('target-num').innerText = targetKills;
+    
     let livesStr = "";
     for (let i = 0; i < playerLives; i++) livesStr += "❤️";
     document.getElementById('lives-display').innerText = livesStr || "💥";
@@ -433,7 +479,7 @@ function setupSkinSelectors() {
     });
 }
 
-// --- LOCAL STORAGE HIGH SCORE ENGINE ---
+// --- SECURE STORAGE HANDLING MECHANISM ---
 function saveHighScore(levelReached) {
     let currentRecord = localStorage.getItem('cyber_shift_high_level') || 1;
     if (levelReached > parseInt(currentRecord)) {
