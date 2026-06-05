@@ -200,7 +200,79 @@ canvas {
 #fire-btn { width: 90px; height: 90px; background: rgba(255, 0, 85, 0.08); border: 3px solid #ff0055; border-radius: 50%; color: white; font-weight: bold; font-size: 0.9rem; touch-action: none; box-shadow: 0 0 15px rgba(255,0,85,0.2); }
 #fire-btn:active { background: #ff0055; }
 
-@media (min-width: 1025px) {
-    #mobile-controls-layer { display: none !important; }
+/* Target mobile devices in landscape orientation */
+@media screen and (max-device-width: 932px) and (orientation: landscape), 
+       screen and (max-height: 500px) and (orientation: landscape) {
+
+    /* The main wrapper/container card */
+    .menu-card, .system-portal-container {
+        max-width: 85vw;
+        height: 85vh; /* Constraints height to prevent vertical scrolling */
+        padding: 2.5vh 3vw !important; /* Scaled down padding */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; /* Evenly distributes elements vertically */
+        align-items: center;
+        margin: auto;
+    }
+
+    /* Game Title (CYBER SHIFT) */
+    .menu-card h1, .game-title {
+        font-size: 6.5vh !important; /* Scales directly with screen height */
+        margin-bottom: 1vh !important;
+        letter-spacing: 2px;
+    }
+
+    /* Subtitles / Status Texts */
+    .system-status, .audio-matrix {
+        font-size: 2.2vh !important;
+        margin-bottom: 1.5vh !important;
+    }
+
+    /* Color Selection Label */
+    .color-label {
+        font-size: 2vh !important;
+        margin-bottom: 1vh !important;
+    }
+
+    /* Avatar Core Row */
+    .avatar-colors-row {
+        gap: 2.5vh !important;
+        margin-bottom: 2vh !important;
+    }
+
+    /* Color Swatches */
+    .color-swatch, .color-btn {
+        width: 7vh !important;  /* Perfectly uniform boxes relative to height */
+        height: 7vh !important;
+        border-radius: 12% !important;
+    }
+
+    /* Record / Score Display Box */
+    .sector-record-box, .all-time-best {
+        padding: 1.5vh 4vw !important;
+        font-size: 2.5vh !important;
+        margin-bottom: 2vh !important;
+        width: 80% !important;
+    }
+
+    /* Controls Instruction Text */
+    .controls-hint {
+        font-size: 1.8vh !important;
+        margin-bottom: 1.5vh !important;
+        opacity: 0.7;
+    }
+
+    /* The Action Button (Launch Mission / Try Again) */
+    .launch-btn, .action-button {
+        font-size: 3vh !important;
+        padding: 1.5vh 6vw !important;
+        min-width: 45vw !important;
+        max-height: 8vh !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        margin-top: auto !important; /* Anchors it cleanly at the bottom container area */
+    }
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
