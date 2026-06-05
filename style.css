@@ -272,7 +272,7 @@ canvas {
         font-size: 0.5rem !important;
     }
 
-    /* LAUNCH MISSION BUTTON: Tiny, portable, and completely clear at the bottom area frame */
+    /* LAUNCH MISSION BUTTON: Nudged up slightly for perfect spacing */
     .action-container {
         height: 28px !important;
         margin-top: 1px !important;
@@ -282,6 +282,7 @@ canvas {
         font-size: 0.68rem !important;
         letter-spacing: 1px !important;
         border-radius: 12px !important;
+        bottom: 8px !important; /* This pushes the button up away from the bottom edge */
     }
 }
 
